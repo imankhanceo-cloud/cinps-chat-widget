@@ -1,0 +1,216 @@
+<!-- ===== CINPS Floating Chat Widget (Desktop + Mobile Perfect) ===== -->
+
+<style>
+/* Floating Button */
+#cinps-chat-btn {
+  position: fixed;
+  bottom: 18px;
+  right: 18px;
+  background: #0b6efd;
+  color: #fff;
+  border-radius: 50%;
+  width: 56px;
+  height: 56px;
+  font-size: 24px;
+  border: none;
+  cursor: pointer;
+  z-index: 999999;
+}
+
+/* Chat Box */
+#cinps-chat-box {
+  position: fixed;
+  bottom: 90px;
+  right: 18px;
+  width: 340px;
+  max-height: 480px;
+  background: #f5f7fb;
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.28);
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 999999;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+}
+
+/* Header */
+#cinps-chat-header {
+  background: linear-gradient(135deg, #0b6efd, #0a58ca);
+  color: #fff;
+  padding: 14px;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+/* Messages Area */
+#cinps-chat-messages {
+  padding: 12px;
+  flex: 1;
+  overflow-y: auto;
+  font-size: 14px;
+  scroll-behavior: smooth;
+}
+
+/* Message Base */
+.cinps-msg {
+  max-width: 85%;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  line-height: 1.45;
+  word-wrap: break-word;
+}
+
+/* User Bubble */
+.cinps-msg.user {
+  margin-left: auto;
+  background: #dff0d8;
+  color: #000;
+  border-bottom-right-radius: 4px;
+}
+
+/* Bot Bubble */
+.cinps-msg.bot {
+  margin-right: auto;
+  background: #ffffff;
+  color: #0b6efd;
+  border-bottom-left-radius: 4px;
+}
+
+/* Input Area */
+#cinps-chat-input {
+  display: flex;
+  gap: 6px;
+  padding: 10px;
+  background: #fff;
+  border-top: 1px solid #ddd;
+}
+
+#cinps-chat-input input {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  outline: none;
+  font-size: 14px;
+}
+
+#cinps-chat-input button {
+  background: #0b6efd;
+  color: #fff;
+  border: none;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ===== MOBILE FIXES ===== */
+@media (max-width: 600px) {
+  #cinps-chat-box {
+    right: 10px;
+    left: 10px;
+    width: auto;
+    bottom: 80px;
+    max-height: 75vh;
+    border-radius: 16px;
+  }
+
+  #cinps-chat-btn {
+    bottom: 14px;
+    right: 14px;
+  }
+
+  .cinps-msg {
+    max-width: 90%;
+    font-size: 15px;
+  }
+
+  #cinps-chat-input input {
+    font-size: 16px; /* prevents mobile zoom */
+  }
+}
+</style>
+
+<button id="cinps-chat-btn">💬</button>
+
+<div id="cinps-chat-box">
+  <div id="cinps-chat-header">CINPS Help Desk</div>
+
+  <div id="cinps-chat-messages">
+    <div class="cinps-msg bot">
+      Hello 👋 How can I help you?<br>
+      আপনি বাংলা, हिंदी या English এ প্রশ্ন করতে পারেন।
+    </div>
+  </div>
+
+  <div id="cinps-chat-input">
+    <input type="text" id="cinps-user-input" placeholder="Type your question…" />
+    <button id="cinps-send-btn">SEND</button>
+  </div>
+</div>
+
+<script>
+const CINPS_API =
+"https://script.google.com/macros/s/AKfycbzo06VO3zeKRV5qba98_ClEMGHFtRItIyFQR_LPPQ5NTJ40MoXY0tsWQQQv0vf0RpR3Tw/exec";
+
+const chatBtn = document.getElementById("cinps-chat-btn");
+const chatBox = document.getElementById("cinps-chat-box");
+const messages = document.getElementById("cinps-chat-messages");
+const input = document.getElementById("cinps-user-input");
+const sendBtn = document.getElementById("cinps-send-btn");
+
+chatBtn.onclick = () => {
+  chatBox.style.display =
+    chatBox.style.display === "flex" ? "none" : "flex";
+};
+
+sendBtn.onclick = cinpsSend;
+input.addEventListener("keypress", e => {
+  if (e.key === "Enter") cinpsSend();
+});
+
+/* 🔧 FIXED addMessage() */
+function addMessage(text, cls, id) {
+  const div = document.createElement("div");
+  div.className = "cinps-msg " + cls;
+  if (id) div.id = id;
+  div.innerHTML = text.replace(/\n/g, "<br>");
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function cinpsSend() {
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  addMessage(msg, "user");
+  input.value = "";
+
+  const loadingId = "loading_" + Date.now();
+  addMessage("Thinking…", "bot", loadingId);
+
+  fetch(CINPS_API, {
+    method: "POST",
+    body: JSON.stringify({
+      userId: "WEB_" + Date.now(),
+      message: msg
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById(loadingId)?.remove();
+    addMessage(data.reply || "Please contact CINPS office.", "bot");
+  })
+  .catch(() => {
+    document.getElementById(loadingId)?.remove();
+    addMessage(
+      "Please contact CINPS office directly at +91 8101579839.",
+      "bot"
+    );
+  });
+}
+</script>
+
+<!-- ===== END CINPS CHAT WIDGET ===== -->
